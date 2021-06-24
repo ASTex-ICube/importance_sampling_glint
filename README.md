@@ -22,6 +22,7 @@ Accepted for [EGSR 2021](https://egsr.eu/2021/).
 * [Building instructions](#building)
 * [Render scenes and material usage](#render)
 * [Tool commands](#tools)
+* [pbrt-v3 readme](#pbrt-v3)
 
 ## <a name="file_organisation"></a>File organisation
 
@@ -58,7 +59,7 @@ The following python script
 ```
 pbrt-v3-scene/launchallscenes.py
 ```
-launches all the renderings of the paper. Python $\ge 3.5$ with `subprocess` dependency is required to use the python script.
+launches all the renderings of the paper. Python <img src="https://render.githubusercontent.com/render/math?math=\ge 3.5"> with `subprocess` dependency is required to use the python script.
 
 We use a modified version of the `pbrt-v3` path tracing algorithm for rendering.
 In the original path tracer, the algorithm uniformly samples *one* light for each ray -- scene intersection.
@@ -108,7 +109,7 @@ We provide the following `C++` commands with the `glinttool`:
 * `convergencecomparisons`
 
 The source code of these commands can be found in `src/tools/glinttool.cpp`.
-We also provide python scripts which call these `C++` commands. Python $\ge 3.5$ with `matplotlib`, `numpy` and `subprocess` dependencies is required to use the python scripts (`glinttool` must also be included in the `PATH` environment variable).
+We also provide python scripts which call these `C++` commands. Python <img src="https://render.githubusercontent.com/render/math?math=\ge 3.5"> with `matplotlib`, `numpy` and `subprocess` dependencies is required to use the python scripts (`glinttool` must also be included in the `PATH` environment variable).
 
 These commands generate python scripts using the `matplotlib` library. Execute the generated script to visualise the result. For example:
 ```
@@ -324,9 +325,9 @@ where `dict_N768_nLevels8.exr` is located in the current directory. See also the
 command_convergencecomparisons/convergencecomparisons.py
 command_convergencecomparisons/allconvergencecomparisons.py
 ```
-The last python script generates the pointwise boxplots of the supplemental material 1.
+The last python script generates the pointwise boxplots of the [supplemental material 1](http://igg.unistra.fr/People/chermain/assets/pdf/Chermain2021ImportanceSamplingSupplemental1.pdf).
 
-pbrt, Version 3
+<a name="pbrt-v3"></a> pbrt, Version 3
 ===============
 
 [![Build Status](https://travis-ci.org/mmp/pbrt-v3.svg?branch=master)](https://travis-ci.org/mmp/pbrt-v3)
