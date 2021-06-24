@@ -8,12 +8,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <algorithm>
+
 #include "fileutil.h"
 #include "imageio.h"
+#include "parallel.h"
 #include "pbrt.h"
 #include "spectrum.h"
-#include "parallel.h"
 extern "C" {
 #include "ext/ArHosekSkyModel.h"
 }
@@ -156,30 +158,32 @@ int makesky(int argc, char *argv[]) {
     int nTheta = resolution, nPhi = 2 * nTheta;
     std::vector<Float> img(3 * nTheta * nPhi, 0.f);
     ParallelInit();
-    ParallelFor([&](int64_t t) {
-        Float theta = float(t + 0.5) / nTheta * Pi;
-        if (theta > Pi / 2.) return;
-        for (int p = 0; p < nPhi; ++p) {
-            Float phi = float(p + 0.5) / nPhi * 2. * Pi;
+    ParallelFor(
+        [&](int64_t t) {
+            Float theta = float(t + 0.5) / nTheta * Pi;
+            if (theta > Pi / 2.) return;
+            for (int p = 0; p < nPhi; ++p) {
+                Float phi = float(p + 0.5) / nPhi * 2. * Pi;
 
-            // Vector corresponding to the direction for this pixel.
-            Vector3f v(std::cos(phi) * std::sin(theta), std::cos(theta),
-                       std::sin(phi) * std::sin(theta));
-            // Compute the angle between the pixel's direction and the sun
-            // direction.
-            Float gamma = std::acos(Clamp(Dot(v, sunDir), -1, 1));
-            CHECK(gamma >= 0 && gamma <= Pi);
+                // Vector corresponding to the direction for this pixel.
+                Vector3f v(std::cos(phi) * std::sin(theta), std::cos(theta),
+                           std::sin(phi) * std::sin(theta));
+                // Compute the angle between the pixel's direction and the sun
+                // direction.
+                Float gamma = std::acos(Clamp(Dot(v, sunDir), -1, 1));
+                CHECK(gamma >= 0 && gamma <= Pi);
 
-            for (int c = 0; c < num_channels; ++c) {
-                float val = arhosekskymodel_solar_radiance(
-                    skymodel_state[c], theta, gamma, lambda[c]);
-                // For each of red, green, and blue, average the three
-                // values for the three wavelengths for the color.
-                // TODO: do a better spectral->RGB conversion.
-                img[3 * (t * nPhi + p) + c / 3] += val / 3.f;
+                for (int c = 0; c < num_channels; ++c) {
+                    float val = arhosekskymodel_solar_radiance(
+                        skymodel_state[c], theta, gamma, lambda[c]);
+                    // For each of red, green, and blue, average the three
+                    // values for the three wavelengths for the color.
+                    // TODO: do a better spectral->RGB conversion.
+                    img[3 * (t * nPhi + p) + c / 3] += val / 3.f;
+                }
             }
-        }
-    }, nTheta, 32);
+        },
+        nTheta, 32);
 
     WriteImage(outfile, (Float *)&img[0], Bounds2i({0, 0}, {nPhi, nTheta}),
                {nPhi, nTheta});
@@ -313,8 +317,8 @@ int cat(int argc, char *argv[]) {
             for (const auto &v : sorted) {
                 Float rgb[3];
                 v.second.ToRGB(rgb);
-                printf("(%d, %d): (%.9g %.9g %.9g)\n", v.first.x,
-                       v.first.y, rgb[0], rgb[1], rgb[2]);
+                printf("(%d, %d): (%.9g %.9g %.9g)\n", v.first.x, v.first.y,
+                       rgb[0], rgb[1], rgb[2]);
             }
         } else {
             for (int y = 0; y < res.y; ++y) {
@@ -456,7 +460,7 @@ int info(int argc, char *argv[]) {
         Float max[3] = {-Infinity, -Infinity, -Infinity};
         double sum[3] = {0., 0., 0.};
         double logYSum = 0.;
-        int nNaN = 0, nInf = 0, nValid[3] = { 0, 0, 0 };
+        int nNaN = 0, nInf = 0, nValid[3] = {0, 0, 0};
         for (int i = 0; i < res.x * res.y; ++i) {
             Float y = image[i].y();
             if (!std::isnan(y) && !std::isinf(y))
@@ -477,8 +481,9 @@ int info(int argc, char *argv[]) {
                 }
             }
         }
-        printf("%s: %d infinite pixel components, %d NaN, (%d, %d, %d) valid.\n",
-               argv[i], nInf, nNaN, nValid[0], nValid[1], nValid[2]);
+        printf(
+            "%s: %d infinite pixel components, %d NaN, (%d, %d, %d) valid.\n",
+            argv[i], nInf, nNaN, nValid[0], nValid[1], nValid[2]);
         printf("%s: log average luminance %f\n", argv[i],
                std::exp(logYSum / (res.x * res.y)));
         printf("%s: min rgb (%f, %f, %f)\n", argv[i], min[0], min[1], min[2]);
@@ -620,7 +625,8 @@ int convert(int argc, char *argv[]) {
             flipy = !flipy;
         else if (!strcmp(argv[i], "--tonemap") || !strcmp(argv[i], "-tonemap"))
             tonemap = !tonemap;
-        else if (!strcmp(argv[i], "--preservecolors") || !strcmp(argv[i], "-preservecolors"))
+        else if (!strcmp(argv[i], "--preservecolors") ||
+                 !strcmp(argv[i], "-preservecolors"))
             preserveColors = !preserveColors;
         else {
             std::pair<std::string, double> arg = parseArg();
@@ -763,7 +769,10 @@ int convert(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
     google::InitGoogleLogging(argv[0]);
-    FLAGS_stderrthreshold = 1; // Warning and above.
+    FLAGS_stderrthreshold = 1;  // Warning and above.
+    std::cout << argv[0] << std::endl;
+
+    Options options;
 
     if (argc < 2) usage();
 

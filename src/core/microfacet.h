@@ -39,10 +39,25 @@
 #define PBRT_CORE_MICROFACET_H
 
 // core/microfacet.h*
-#include "pbrt.h"
 #include "geometry.h"
+#include "pbrt.h"
 
 namespace pbrt {
+
+inline Vector3f SlopeToNormal(Vector2f slope) {
+    Float denoSqr = slope.x * slope.x + slope.y * slope.y + 1.;
+    CHECK_GT(denoSqr, 0.);
+    Float deno = std::sqrt(denoSqr);
+    CHECK_GT(deno, 0.);
+    Vector3f normal(-slope.x, -slope.y, 1.);
+    return normal / deno;
+}
+
+inline Float G1VCavity(Vector3f wm, Vector3f wo) {
+    Float DotWOWM = Dot(wo, wm);
+    if (DotWOWM <= 0.) return 0.;
+    return std::min(1., 2. * wm.z * wo.z / DotWOWM);
+}
 
 // MicrofacetDistribution Declarations
 class MicrofacetDistribution {

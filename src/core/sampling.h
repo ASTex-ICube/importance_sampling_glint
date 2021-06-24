@@ -39,10 +39,11 @@
 #define PBRT_CORE_SAMPLING_H
 
 // core/sampling.h*
-#include "pbrt.h"
-#include "geometry.h"
-#include "rng.h"
 #include <algorithm>
+
+#include "geometry.h"
+#include "pbrt.h"
+#include "rng.h"
 
 namespace pbrt {
 
@@ -108,6 +109,69 @@ struct Distribution1D {
     Float funcInt;
 };
 
+// This structure stores a piecewise linear 1D distribution. It also allows to
+// sample the distribution.
+struct PiecewiseLinearDistribution1D {
+    PiecewiseLinearDistribution1D(const Float *f, int n)
+        : func(f, f + n), cdf(n) {
+        // Compute integral of piecewise linear function at x_i
+        cdf[0] = 0;
+        for (int i = 1; i < n; ++i)
+            cdf[i] = cdf[i - 1] + (func[i - 1] + func[i]) / (2. * (n - 1));
+
+        funcInt = cdf[n - 1];
+        if (funcInt == 0) {
+            for (int i = 1; i < n; ++i) cdf[i] = Float(i) / Float(n - 1);
+        } else {
+            for (int i = 1; i < n; ++i) cdf[i] /= funcInt;
+        }
+    }
+    int Count() const { return (int)func.size() - 1; }
+
+    Float SampleContinuous(Float u, int *off = nullptr) const {
+        int offset = FindInterval((int)cdf.size(),
+                                  [&](int index) { return cdf[index] <= u; });
+        if (off) *off = offset;
+
+        CHECK_LT(offset, Count());
+        Float du = u - cdf[offset];
+        if ((cdf[offset + 1] - cdf[offset]) > 0) {
+            CHECK_GT(cdf[offset + 1], cdf[offset]);
+            du /= (cdf[offset + 1] - cdf[offset]);
+        }
+        DCHECK(!std::isnan(du));
+
+        // func is originally not normalized in [0,1]. But it must be normalized
+        // to correctly sample the linear function in the sampled interval
+        Float pdfOffset = func[offset] / cdf[Count()];
+        Float pdfOffsetP1 = func[offset + 1] / cdf[Count()];
+
+        // Slope of the line in the interval
+        Float a = Count() * (pdfOffsetP1 - pdfOffset);
+        if (std::abs(a) < 0.001)
+            // Uniform sampling in the interval, because the y coordinate of the
+            // line is constant
+            return (offset + du) / Count();
+        else {
+            // Compute the intercept of the line
+            Float b = (offset + 1) * pdfOffset - offset * pdfOffsetP1;
+
+            // Sample the PDF defined by the linear function in the sampled
+            // interval
+            Float sample_value =
+                (offset * pdfOffsetP1 - offset * pdfOffset - pdfOffset +
+                 std::sqrt(pdfOffsetP1 * pdfOffsetP1 * du -
+                           pdfOffset * pdfOffset * du +
+                           pdfOffset * pdfOffset)) /
+                (Count() * (pdfOffsetP1 - pdfOffset));
+            return sample_value;
+        }
+    }
+
+    std::vector<Float> func, cdf;
+    Float funcInt;
+};
+
 Point2f RejectionSampleDisk(RNG &rng);
 Vector3f UniformSampleHemisphere(const Point2f &u);
 Float UniformHemispherePdf();
@@ -132,11 +196,21 @@ class Distribution2D {
         *pdf = pdfs[0] * pdfs[1];
         return Point2f(d0, d1);
     }
+    Point2i SampleDiscrete(const Point2f &u) const {
+        int iv = pMarginal->SampleDiscrete(u[1]);
+        int iu = pConditionalV[iv]->SampleDiscrete(u[0]);
+        return Point2i(iu, iv);
+    }
     Float Pdf(const Point2f &p) const {
         int iu = Clamp(int(p[0] * pConditionalV[0]->Count()), 0,
                        pConditionalV[0]->Count() - 1);
         int iv =
             Clamp(int(p[1] * pMarginal->Count()), 0, pMarginal->Count() - 1);
+        return pConditionalV[iv]->func[iu] / pMarginal->funcInt;
+    }
+    Float Pdf(const Point2i &p) const {
+        int iu = Clamp(p[0], 0, pConditionalV[0]->Count() - 1);
+        int iv = Clamp(p[1], 0, pMarginal->Count() - 1);
         return pConditionalV[iv]->func[iu] / pMarginal->funcInt;
     }
 

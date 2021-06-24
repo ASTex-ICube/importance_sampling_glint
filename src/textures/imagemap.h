@@ -92,6 +92,21 @@ class ImageTexture : public Texture<Treturn> {
         convertOut(mem, &ret);
         return ret;
     }
+    Treturn EvaluateBilinear(const Point2f &st) {
+        Float s = st[0];
+        Float t = st[1];
+        int s0 = std::floor(s), t0 = std::floor(t);
+        Float ds = s - s0, dt = t - t0;
+        return (1 - ds) * (1 - dt) * Texel(0, s0, t0) +
+               (1 - ds) * dt * Texel(0, s0, t0 + 1) +
+               ds * (1 - dt) * Texel(0, s0 + 1, t0) +
+               ds * dt * Texel(0, s0 + 1, t0 + 1);
+    }
+    Tmemory Texel(int level, int s, int t) const {
+        return mipmap->Texel(level, s, t);
+    }
+    int Height() const { return mipmap->Height(); }
+    int Width() const { return mipmap->Width(); }
 
   private:
     // ImageTexture Private Methods

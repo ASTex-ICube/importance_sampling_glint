@@ -30,13 +30,13 @@
 
  */
 
-
 // materials/metal.cpp*
 #include "materials/metal.h"
-#include "reflection.h"
-#include "paramset.h"
-#include "texture.h"
+
 #include "interaction.h"
+#include "paramset.h"
+#include "reflection.h"
+#include "texture.h"
 
 namespace pbrt {
 

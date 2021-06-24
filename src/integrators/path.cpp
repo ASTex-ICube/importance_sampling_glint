@@ -32,6 +32,7 @@
 
 // integrators/path.cpp*
 #include "integrators/path.h"
+
 #include "bssrdf.h"
 #include "camera.h"
 #include "film.h"
@@ -59,6 +60,18 @@ PathIntegrator::PathIntegrator(int maxDepth,
 void PathIntegrator::Preprocess(const Scene &scene, Sampler &sampler) {
     lightDistribution =
         CreateLightSampleDistribution(lightSampleStrategy, scene);
+
+    // Compute number of samples to use for each light
+    for (const auto &light : scene.lights)
+        nLightSamples.push_back(sampler.RoundCount(light->nSamples));
+
+    // Request samples for sampling all lights
+    for (int i = 0; i < maxDepth; ++i) {
+        for (size_t j = 0; j < scene.lights.size(); ++j) {
+            sampler.Request2DArray(nLightSamples[j]);
+            sampler.Request2DArray(nLightSamples[j]);
+        }
+    }
 }
 
 Spectrum PathIntegrator::Li(const RayDifferential &r, const Scene &scene,
@@ -119,8 +132,11 @@ Spectrum PathIntegrator::Li(const RayDifferential &r, const Scene &scene,
         if (isect.bsdf->NumComponents(BxDFType(BSDF_ALL & ~BSDF_SPECULAR)) >
             0) {
             ++totalPaths;
-            Spectrum Ld = beta * UniformSampleOneLight(isect, scene, arena,
-                                                       sampler, false, distrib);
+            Spectrum Ld = beta * UniformSampleAllLights(isect, scene, arena,
+                                                        sampler, nLightSamples);
+            /*Spectrum Ld = beta * UniformSampleOneLight(isect, scene, arena,
+                                                       sampler, false,
+               distrib);*/
             VLOG(2) << "Sampled direct lighting Ld = " << Ld;
             if (Ld.IsBlack()) ++zeroRadiancePaths;
             CHECK_GE(Ld.y(), 0.f);
