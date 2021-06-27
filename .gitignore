@@ -1,33 +1,9 @@
-.DS_Store
-*.suo
 *~
-*.user
-*.aps
-*.ipch
-*.pdb
-*.ilk
-*.exe
-*.swp
-debug.log
+src/build
+src/bin
+src/objs
+.sconsign.dblite
 
-# Cmake build/output
-CMakeFiles/
-cmake_install.cmake
-CMakeCache.txt
-Makefile
-**/*.dir/
-cmake-build*/
-
-# Compiled output
-opengl/libopengl.a
-
-.idea/
-*.cbp
-
-# Visual Studio projects, solutions, build folders, etc.
-*.vcxproj
-*.sln
-*.vcxproj.filters
-.vs/
-x64/
-build/
+build
+build-release
+build-debug

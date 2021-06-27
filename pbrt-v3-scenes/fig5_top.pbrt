@@ -1,0 +1,88 @@
+Integrator "path" "integer maxdepth" [ 32 ]
+
+Sampler "halton" "integer pixelsamples" [ 1024 ]
+
+PixelFilter "gaussian"
+
+Film "image" "integer xresolution" [ 1920 ] "integer yresolution" [ 540 ] "string filename" [ "fig5_top.png" ]
+
+LookAt  0 2 2.5
+        0. 0. 0.
+        0 1 0
+
+Camera "perspective" "float fov" [ 35.983398 ]
+
+WorldBegin
+	Texture "Texture01Float" "float" "imagemap" "string filename" [ "textures/cat.tga" ] "bool trilinear" [ "true" ] 
+	Texture "dictionary" "spectrum" "imagemap"
+  		"string filename" "./textures/dict_N768_nLevels8.exr"
+  		"string wrap" "clamp"
+  		"float uscale" [1] "float vscale" [1]
+
+	Texture "checks" "float" "checkerboard"
+          "float uscale" [128] "float vscale" [128]
+          "float tex1" [.1] "float tex2" [.8]
+
+	MakeNamedMaterial "GlitteringCat" "string type" [ "glitteringconductor" ] "rgb R" [ 1. 0.880369 0.521229 ]  "texture dictionary" "dictionary" "bool fresnelnoop" "true" "float alphax" [0.6] "float alphay" [0.6] "float logmicrofacetdensity" [16] "float alphaxbasematerial" [0.03] "float alphaybasematerial" [0.03] "texture microfacetrelativearea" "Texture01Float" "bool sampleapproximation" "false"
+	MakeNamedMaterial "Floor" "string type" [ "glitteringconductor" ] "rgb R" [ 1. 1. 1. ] "texture dictionary" "dictionary" "bool fresnelnoop" "true" "float alphax" [1.] "float alphay" [1.] "float logmicrofacetdensity" [24] "float alphaxbasematerial" [0.03] "float alphaybasematerial" [0.03] "texture microfacetrelativearea" "checks" "bool sampleapproximation" "false"
+	MakeNamedMaterial "PictureFrame" "string type" [ "matte" ] "rgb Kd" [ 0.258824 0.207843 0.145098 ] 
+	MakeNamedMaterial "GlitteringConductor" "string type" [ "glitteringconductor" ] "rgb R" [ 1. 0.2 0.2 ] "texture dictionary" "dictionary" "bool fresnelnoop" "true" "float alphax" [0.6] "float alphay" [0.6] "float logmicrofacetdensity" [17] "float microfacetrelativearea" [1.] "bool sampleapproximation" "false"
+	MakeNamedMaterial "GlitteringDielectric" "string type" [ "glitteringdielectric" ] "texture dictionary" "dictionary" "float alphax" [0.6] "float alphay" [0.6] "float alphaxbasematerial" [0.1] "float alphaybasematerial" [0.1] "float logmicrofacetdensity" [16] "float microfacetrelativearea" [1.] "bool sampleapproximation" "false"
+
+	# Light
+	AttributeBegin
+      Rotate 160 0 1 0
+      Rotate -90 1 0 0
+      LightSource "infinite" "string mapname" "textures/sky.exr" "color L" [1. 1. 1.] "integer     nsamples" [1]
+    AttributeEnd
+
+	# Glittering Cat
+	NamedMaterial "GlitteringCat"
+	AttributeBegin
+		Scale 1.1 1.1 1.1
+		Rotate -50 1 0 0
+	    Rotate -90 0 1 0
+        Translate 3.2 -2.2 2.71
+		Shape "plymesh" "string filename" [ "models/Mesh008.ply" ]
+	AttributeEnd
+	NamedMaterial "PictureFrame"
+	AttributeBegin
+		Scale 1.1 1.1 1.1
+		Rotate -50 1 0 0
+		Rotate -90 0 1 0
+        Translate 3.2 -2.2 2.71
+		Shape "plymesh" "string filename" [ "models/Mesh013.ply" ] 
+	AttributeEnd
+
+	# Floor
+	TransformBegin
+		NamedMaterial "Floor"
+		Rotate -90 1 0 0
+		Shape "trianglemesh"
+          "integer indices" [0 1 2 0 2 3]
+          "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+          "float st" [ 0 0   1 0    1 1   0 1 ] 
+	TransformEnd
+
+	AttributeBegin
+		Translate -2.3 0.3 0.1
+        LightSource "point" "rgb I" [ 0.01 0.01 0.01 ]
+    AttributeEnd
+	AttributeBegin
+      NamedMaterial "GlitteringDielectric"
+	  Translate -2.3 0.2 0.1
+	  Rotate 30 0 1 0
+	  Rotate -45 1 0 0
+	  Scale 0.7 0.7 0.7
+	  Include "models/suzanne_mesh.pbrt"
+    AttributeEnd
+	
+	AttributeBegin
+      Translate 1.9 0. 0.5
+	  Rotate -65 0 1 0
+	  Scale 0.5 0.5 0.5
+      NamedMaterial "GlitteringConductor"
+      Include "models/lion_mesh.pbrt"
+    AttributeEnd
+
+WorldEnd

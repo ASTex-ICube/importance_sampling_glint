@@ -1,0 +1,68 @@
+Film "image" 
+        "integer xresolution" [ 512 ]
+        "integer yresolution" [ 512 ]
+        "string filename" [ "fig1_left.png" ]
+
+LookAt  0 0 1
+        0 0 0
+        0 1 0
+	
+Camera "perspective"
+        "float fov" [ 28 ]
+
+Sampler "halton" "integer pixelsamples" [128]
+PixelFilter "gaussian"
+Integrator "path" "integer maxdepth" [64] "string lightsamplestrategy" "uniform"
+
+WorldBegin
+
+AttributeBegin
+  Translate 0 0 0
+  LightSource "point" "rgb I" [ 0.05 0.05 0.05 ]
+AttributeEnd
+
+AttributeBegin
+  Rotate 80 0 1 0
+  Rotate -90 1 0 0
+  LightSource "infinite" "string mapname" "textures/pisa.exr" "color L" [1 1 1] "integer nsamples" [1]
+AttributeEnd
+
+Texture "texture_egsr" "float" "imagemap"
+  "string filename" "./textures/texture_egsr2021.png"
+  "string wrap" "repeat"
+  "float uscale" [1] "float vscale" [-1]
+
+Texture "dictionary" "spectrum" "imagemap"
+  "string filename" "./textures/dict_N768_nLevels8.exr"
+  "string wrap" "clamp"
+  "float uscale" [1] "float vscale" [1]
+
+MakeNamedMaterial "glint"
+  "string type" ["glitteringdielectric"]
+  "float alphax" [0.6]
+  "float alphay" [0.6]
+  "float rho" [0.]
+  "float alphaxbasematerial" [0.02]
+  "float alphaybasematerial" [0.02]
+  "float rhobasematerial" [0.]
+  "float logmicrofacetdensity" [19]
+  "float densityrandomisation" [2.]
+  # "float microfacetrelativearea" [1.]
+  "texture microfacetrelativearea" "texture_egsr"
+  # dielectric color
+  "rgb Kr" [0.22 0.92 0.98]
+  "rgb Kt" [0.22 0.92 0.98]
+  "integer N" [768]
+  "integer nlevels" [8]
+  "float alpha_dict" [0.5]
+  "texture dictionary" "dictionary"
+  "bool sampleapproximation" "false"
+
+AttributeBegin
+  NamedMaterial "glint"
+  Rotate 90 0 1 0
+  Rotate 90 1 0 0
+  Shape "sphere" "float radius" [0.22]
+AttributeEnd
+
+WorldEnd
